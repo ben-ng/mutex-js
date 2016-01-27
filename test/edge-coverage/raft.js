@@ -6,6 +6,7 @@ var Strategy = require('../../strategies/raft-strategy')
   , tap = require('tap')
   , uuid = require('uuid')
   , async = require('async')
+  , Promise = require('bluebird')
 
 tap.test('raft strategy - fails when no options are given', function (t) {
   t.throws(function () {
