@@ -1,6 +1,10 @@
-# Mutex [![Build Status](https://img.shields.io/circleci/project/ben-ng/mutex-js.svg)](https://circleci.com/gh/ben-ng/mutex-js/tree/master) [![Coverage Status](https://img.shields.io/coveralls/ben-ng/mutex-js/master.svg)](https://coveralls.io/github/ben-ng/mutex-js?branch=master) [![npm version](https://img.shields.io/npm/v/mutex-js.svg)](https://www.npmjs.com/package/mutex-js)
+# Mutex [![Build Status](https://img.shields.io/circleci/project/ben-ng/mutex-js.svg)](https://circleci.com/gh/ben-ng/mutex-js/tree/master) [![Coverage Status](https://img.shields.io/coveralls/ben-ng/mutex-js/master.svg)](https://coveralls.io/github/ben-ng/mutex-js?branch=master) [![npm version](https://img.shields.io/npm/v/mutex.svg)](https://www.npmjs.com/package/mutex)
 
 This is a keyed mutex. It abstracts over different [Strategies](#strategies) for mutual exclusion, so you can choose your own tradeoffs.
+
+```sh
+npm install mutex
+```
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
