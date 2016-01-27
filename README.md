@@ -1,4 +1,4 @@
-# Mutex [![Build Status](https://img.shields.io/circleci/project/ben-ng/mutex.svg)](https://circleci.com/gh/ben-ng/mutex/tree/master) [![Coverage Status](https://img.shields.io/coveralls/ben-ng/mutex/master.svg)](https://coveralls.io/github/ben-ng/mutex?branch=master) [![npm version](https://img.shields.io/npm/v/mutex.svg)](https://www.npmjs.com/package/mutex)
+# Mutex [![Build Status](https://img.shields.io/circleci/project/ben-ng/mutex-js.svg)](https://circleci.com/gh/ben-ng/mutex-js/tree/master) [![Coverage Status](https://img.shields.io/coveralls/ben-ng/mutex-js/master.svg)](https://coveralls.io/github/ben-ng/mutex-js?branch=master) [![npm version](https://img.shields.io/npm/v/mutex-js.svg)](https://www.npmjs.com/package/mutex-js)
 
 This is a keyed mutex. It abstracts over different [Strategies](#strategies) for mutual exclusion, so you can choose your own tradeoffs.
 
@@ -36,17 +36,17 @@ This is a keyed mutex. It abstracts over different [Strategies](#strategies) for
 Each test performs an asynchronous operation that takes approximately 70ms a hundred times. The "sequential" test is a single process performing all one hundred operations itself, in series. The "Worst Case" tests are ten processes trying to acquire the same lock before performing the task. The "Best Case" tests are ten processes acquiring different locks before performing the task.
 
 ```
-Sequential - Baseline x 0.15 ops/sec ±0.44% (5 runs sampled)
-Redis - Worst Case x 0.13 ops/sec ±1.24% (5 runs sampled)
-Raft - Worst Case x 0.06 ops/sec ±0.43% (5 runs sampled)
-Redis - Best Case x 0.66 ops/sec ±1.04% (6 runs sampled)
-Raft - Best Case x 0.09 ops/sec ±0.25% (5 runs sampled)
+Sequential - Baseline x 0.15 ops/sec ±0.48% (5 runs sampled)
+Redis - Worst Case x 0.14 ops/sec ±1.90% (5 runs sampled)
+Raft - Worst Case x 0.05 ops/sec ±31.01% (5 runs sampled)
+Redis - Best Case x 0.65 ops/sec ±1.47% (6 runs sampled)
+Raft - Best Case x 0.10 ops/sec ±68.01% (5 runs sampled)
 
-      Raft - Worst Case | ######################################## | 168.13 ms/operation
-       Raft - Best Case | ###########################              | 115.07 ms/operation
-     Redis - Worst Case | ##################                       | 74.87 ms/operation
-  Sequential - Baseline | ################                         | 67.35 ms/operation
-      Redis - Best Case | ####                                     | 15.23 ms/operation
+      Raft - Worst Case | ######################################## | 191.01 ms/op
+       Raft - Best Case | #####################                    | 102.06 ms/op
+     Redis - Worst Case | ###############                          | 73.8 ms/op
+  Sequential - Baseline | ##############                           | 67.3 ms/op
+      Redis - Best Case | ###                                      | 15.27 ms/op
 ```
 
 Note that ms/operation can be much lower than the ~70ms each task takes because multiple processes are working on tasks at the same time.
@@ -87,7 +87,7 @@ Result: x = 1
 Expected: x = 2
 ```
 
-This is known as the "lost update" problem. You can solve this problem with mutex, which supports both callbacks and promises.
+This is known as the "lost update" problem. You can solve this problem with Mutex, which supports both callbacks and promises.
 
 #### Sample Code: Performing Atomic Increments (Callbacks)
 
@@ -194,11 +194,11 @@ By enclosing the `GET` and `SET` commands within the critical section, we guaran
 
 #### Test Suite
 
-mutex has a comprehensive test suite, and releases always have 100% statement coverage.
+Mutex has a comprehensive test suite, and releases always have 100% statement coverage.
 
 #### Fuzzer
 
-mutex has a fuzzer that has detected problems in the past. You can run it with `npm run fuzz`. It will keep running until a consistency issue is detected.
+Mutex has a fuzzer that has detected problems in the past. You can run it with `npm run fuzz`. It will keep running until a consistency issue is detected.
 
 #### Formal Proof
 
