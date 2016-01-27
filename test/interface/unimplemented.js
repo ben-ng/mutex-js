@@ -1,0 +1,27 @@
+var tap = require('tap')
+  , uuid = require('uuid')
+  , Strategy = require('../../strategies/unimplemented-strategy')
+
+tap.test('Rejects when stub methods are called', function (t) {
+  var s = new Strategy({id: uuid.v4()})
+
+  t.plan(3)
+
+  s.lock('dummy').catch(function (e) {
+    t.equals(e.toString()
+    , 'Error: unimplemented method _lock is required by the Strategy interface'
+    , 'Lock fails with the right error')
+  })
+
+  s.unlock({key: 'dummy', nonce: 'dummy'}).catch(function (e) {
+    t.equals(e.toString()
+    , 'Error: unimplemented method _unlock is required by the Strategy interface'
+    , 'Unlock fails with the right error')
+  })
+
+  s.close().catch(function (e) {
+    t.equals(e.toString()
+    , 'Error: unimplemented method _close is required by the Strategy interface'
+    , 'Close fails with the right error')
+  })
+})
