@@ -46,15 +46,20 @@ function RaftStrategy (opts) {
         var state = this.getProvisionalState()
 
         if (state == null || state[key] == null || state[key].ttl < Date.now()) {
+          // Don't bother waiting for the dispatch to finish, nodes are listening
+          // for the commit anyway. If we waited for the change to be committed then
+          // we can't grant locks in parallel!
           this.dispatch({
             type: ACTIONS.LOCK
           , key: key
           , nonce: nonce
           , ttl: Date.now() + duration
-          }, CLUSTER_CONSENSUS_TIMEOUT, cb)
+          }, CLUSTER_CONSENSUS_TIMEOUT, _.noop)
+
+          cb()
         }
         else {
-          cb(new Error('The lock is currently held by a different process, try again in ' + (Date.now() - this.getState()[key].ttl) + 'ms'))
+          cb(new Error('The lock is currently held by a different process, try again in ' + (Date.now() - state[key].ttl) + 'ms'))
         }
       }
     , unlock: function (key, nonce, cb) {
@@ -132,13 +137,7 @@ RaftStrategy.prototype.lock = function lock (key, opts) {
     }, function (next) {
       self._conflux.perform('lock', [key, newNonce, LOCK_DURATION], EACH_TRY_TIMEOUT, function (err) {
         granted = !err
-
-        if (granted) {
-          next()
-        }
-        else {
-          setTimeout(next, _.random(15, 300))
-        }
+        next()
       })
     }, function () {
       if (!granted) {
@@ -163,13 +162,7 @@ RaftStrategy.prototype.unlock = function unlock (lock) {
     }, function (next) {
       self._conflux.perform('unlock', [lock.key, lock.nonce], EACH_TRY_TIMEOUT, function (err) {
         released = !err
-
-        if (released) {
-          next()
-        }
-        else {
-          setTimeout(next, _.random(15, 300))
-        }
+        next()
       })
     }, function () {
       if (!released) {
