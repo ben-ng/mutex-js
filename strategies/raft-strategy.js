@@ -9,7 +9,6 @@ var StrategyInterface = require('./strategy-interface')
   , _ = require('lodash')
   , prettifyJoiError = require('../helpers/prettify-joi-error')
   , EventEmitter = require('events').EventEmitter
-  , CLUSTER_CONSENSUS_TIMEOUT = 10000
   , ACTIONS = {LOCK: 'LOCK', UNLOCK: 'UNLOCK'}
 
 function RaftStrategy (opts) {
@@ -42,38 +41,36 @@ function RaftStrategy (opts) {
   , clusterSize: opts.strategyOptions.clusterSize
   , channel: opts.channel
   , methods: {
-      lock: function (key, nonce, duration, cb) {
+      lock: function (key, nonce, duration) {
         var state = this.getProvisionalState()
 
         if (state == null || state[key] == null || state[key].ttl < Date.now()) {
           // Don't bother waiting for the dispatch to finish, nodes are listening
           // for the commit anyway. If we waited for the change to be committed then
           // we can't grant locks in parallel!
-          this.dispatch({
+          return {
             type: ACTIONS.LOCK
           , key: key
           , nonce: nonce
           , ttl: Date.now() + duration
-          }, CLUSTER_CONSENSUS_TIMEOUT, _.noop)
-
-          cb()
+          }
         }
         else {
-          cb(new Error('The lock is currently held by a different process, try again in ' + (Date.now() - state[key].ttl) + 'ms'))
+          return new Error('The lock is currently held by a different process, try again in ' + (Date.now() - state[key].ttl) + 'ms')
         }
       }
-    , unlock: function (key, nonce, cb) {
+    , unlock: function (key, nonce) {
         var state = this.getProvisionalState()
 
         if (state != null && (state[key] != null && state[key].nonce === nonce)) {
-          this.dispatch({
+          return {
             type: ACTIONS.UNLOCK
           , key: key
           , nonce: nonce
-          }, CLUSTER_CONSENSUS_TIMEOUT, cb)
+          }
         }
         else {
-          cb()
+          return null
         }
       }
     }
