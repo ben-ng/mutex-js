@@ -6,7 +6,6 @@ var StrategyInterface = require('./strategy-interface')
   , async = require('async')
   , defined = require('defined')
   , Joi = require('joi')
-  , _ = require('lodash')
   , prettifyJoiError = require('../helpers/prettify-joi-error')
   , EventEmitter = require('events').EventEmitter
   , ACTIONS = {LOCK: 'LOCK', UNLOCK: 'UNLOCK'}
@@ -76,6 +75,10 @@ function RaftStrategy (opts) {
     }
   , reduce: function (state, action) {
       state = state == null ? {} : JSON.parse(JSON.stringify(state))
+
+      if (action == null) {
+        return state
+      }
 
       switch (action.type) {
         case ACTIONS.LOCK:
