@@ -225,11 +225,11 @@ Returns the UNIX timestamp that the lock will expire at.
 
 #### Test Suite
 
-Mutex has a comprehensive test suite, and releases always have 100% statement coverage.
+Mutex has a comprehensive test suite, and releases always have 100% statement, branch, and function coverage.
 
 #### Fuzzer
 
-Mutex has a fuzzer that has detected very subtle problems in the past (such as those caused by clock drift / garbage collection pauses). You can run it with `npm run fuzz`. It will keep running until a consistency issue is detected.
+Mutex has a fuzzer that has detected very subtle problems in the past (such as those caused by clock drift / garbage collection pauses). You can run it with `npm run fuzz`. It will keep running until a consistency issue is detected. The most subtle issues detected so far required up to fifteen hours of fuzzing.
 
 #### Formal Proof
 
