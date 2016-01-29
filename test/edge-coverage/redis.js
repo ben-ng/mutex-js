@@ -51,12 +51,13 @@ tap.test('redis strategy - acquisition times out', function (t) {
 tap.test('redis strategy - nonce mismatch when unlocking', function (t) {
   var a = new Strategy({id: uuid.v4()})
     , sameKey = 'nonceMismatchLock'
+    , fakeLock = Strategy.prototype._createLock(sameKey, uuid.v4(), Date.now() + 1000)
 
   a.lock(sameKey, {
     duration: 10000
   })
   .then(function (lock) {
-    return a.unlock(_.extend({}, lock, {nonce: 'whoops'}))
+    return a.unlock(fakeLock)
   })
   .catch(_.noop)
   .finally(function () {

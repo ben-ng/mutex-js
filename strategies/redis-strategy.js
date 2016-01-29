@@ -46,26 +46,22 @@ function RedisStrategy (opts) {
 util.inherits(RedisStrategy, StrategyInterface)
 
 RedisStrategy.prototype._lock = function _lock (key, opts) {
-  var acquired = false
+  var self = this
+    , acquired = false
     , started = Date.now()
-    , MAX_WAIT = opts.maxWait
-    , LOCK_DURATION = opts.duration
     , r = this._redis
     , newNonce = this.id + '_' + uuid.v4()
 
   return new Promise(function (resolve, reject) {
     async.whilst(function () {
-      return acquired === false && Date.now() - started < MAX_WAIT
+      return acquired === false && Date.now() - started < opts.maxWait
     }, function (next) {
       /*eslint-disable handle-callback-err*/
-      r.set(key, newNonce, 'NX', 'PX', LOCK_DURATION, function (err, res) {
+      r.set(key, newNonce, 'NX', 'PX', opts.duration, function (err, res) {
         // Ignore errors since we'll be trying again anyway
         /*eslint-enable handle-callback-err*/
         if (res === 'OK') {
-          acquired = {
-            key: key
-          , nonce: newNonce
-          }
+          acquired = self._createLock(key, newNonce, Date.now() + opts.duration)
 
           next(null)
         }
@@ -88,10 +84,10 @@ RedisStrategy.prototype._lock = function _lock (key, opts) {
 RedisStrategy.prototype._unlock = function _unlock (lock) {
   var r = this._redis
 
-  return r.getAsync(lock.key)
+  return r.getAsync(lock.getKey())
   .then(function (res) {
-    if (res === lock.nonce) {
-      return r.delAsync(lock.key)
+    if (res === lock.getNonce()) {
+      return r.delAsync(lock.getKey())
     }
     else {
       return Promise.resolve()

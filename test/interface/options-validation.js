@@ -54,7 +54,7 @@ tap.test('Throws when unlock argument is invalid', function (t) {
   s.unlock('should be a lock object')
   .catch(function (err) {
     t.equals(err.toString()
-    , 'Invalid options: "value" must be an object'
+    , 'unlock() expects the Lock object returned from lock()'
     , 'Should reject if unlock argument is invalid')
 
     t.end()

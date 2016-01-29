@@ -1,6 +1,7 @@
 var Promise = require('bluebird')
   , Joi = require('joi')
   , _ = require('lodash')
+  , Lock = require('./lock')
   , prettifyJoiError = require('../helpers/prettify-joi-error')
 
 /*
@@ -22,7 +23,7 @@ var Promise = require('bluebird')
 
 function StrategyInterface (opts) {
   var validatedOptions = Joi.validate(opts || {}, Joi.object().keys({
-    logFunction: Joi.func().default(function noop () {})
+    logFunction: Joi.func().default(_.noop)
   , strategyOptions: Joi.object()
   , channel: Joi.object()
   , id: Joi.string()
@@ -45,6 +46,7 @@ StrategyInterface.prototype.lock = function lock (key, opts, _cb) {
         convert: false
       })
     , cb = typeof opts === 'function' ? opts : _cb
+    , validatedOpts
     , p
 
   if (this._closed !== false) {
@@ -54,7 +56,11 @@ StrategyInterface.prototype.lock = function lock (key, opts, _cb) {
     p = Promise.reject(prettifyJoiError(validatedOptions.error))
   }
   else if (typeof this._lock === 'function') {
-    p = this._lock(key, validatedOptions.value)
+    validatedOpts = validatedOptions.value
+    // Acquire for a longer duration so that the requester actually gets the lock for the
+    // duration that they asked for
+    validatedOpts.duration = Math.max(validatedOpts.duration + 2000, validatedOpts.duration * 1.5)
+    p = this._lock(key, validatedOpts)
   }
   else {
     p = Promise.reject(new Error('unimplemented method _lock is required by the Strategy interface'))
@@ -69,25 +75,19 @@ StrategyInterface.prototype.lock = function lock (key, opts, _cb) {
 }
 
 StrategyInterface.prototype.unlock = function unlock (lock, cb) {
-  var validatedLock = Joi.validate(lock, Joi.object().keys({
-        key: Joi.string()
-      , nonce: Joi.string()
-      }).requiredKeys('key', 'nonce'), {
-        convert: false
-      })
-    , p
+  var p
 
   if (this._closed !== false) {
     p = Promise.reject(new Error('This instance has been closed'))
   }
-  else if (validatedLock.error != null) {
-    p = Promise.reject(prettifyJoiError(validatedLock.error))
+  else if (typeof this._unlock !== 'function') {
+    p = Promise.reject(new Error('unimplemented method _unlock is required by the Strategy interface'))
   }
-  else if (typeof this._unlock === 'function') {
-    p = this._unlock(validatedLock.value)
+  else if (!(lock instanceof Lock)) {
+    p = Promise.reject('unlock() expects the Lock object returned from lock()')
   }
   else {
-    p = Promise.reject(new Error('unimplemented method _unlock is required by the Strategy interface'))
+    p = this._unlock(lock)
   }
 
   if (typeof cb === 'function') {
@@ -116,6 +116,10 @@ StrategyInterface.prototype.close = function close (cb) {
   else {
     return p
   }
+}
+
+StrategyInterface.prototype._createLock = function (key, nonce, ttl) {
+  return new Lock(key, nonce, ttl)
 }
 
 module.exports = StrategyInterface

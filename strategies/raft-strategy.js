@@ -104,7 +104,7 @@ function RaftStrategy (opts) {
 
 util.inherits(RaftStrategy, StrategyInterface)
 
-RaftStrategy.prototype.lock = function lock (key, opts) {
+RaftStrategy.prototype._lock = function lock (key, opts) {
   var self = this
     , granted = false
     , started = Date.now()
@@ -123,10 +123,7 @@ RaftStrategy.prototype.lock = function lock (key, opts) {
       if (keyNonce === newNonce) {
         self._emitter.removeListener('changed', resolveOnCommitted)
 
-        resolve({
-          key: key
-        , nonce: newNonce
-        })
+        resolve(self._createLock(key, newNonce, keyState.ttl))
       }
     }
 
@@ -148,7 +145,7 @@ RaftStrategy.prototype.lock = function lock (key, opts) {
   })
 }
 
-RaftStrategy.prototype.unlock = function unlock (lock) {
+RaftStrategy.prototype._unlock = function unlock (lock) {
   var self = this
     , released = false
     , started = Date.now()
@@ -160,7 +157,7 @@ RaftStrategy.prototype.unlock = function unlock (lock) {
     async.whilst(function () {
       return !released && Date.now() < Math.max(started + MAX_WAIT - ROUND_TRIP_LATENCY, started)
     }, function (next) {
-      self._conflux.perform('unlock', [lock.key, lock.nonce], EACH_TRY_TIMEOUT, function (err) {
+      self._conflux.perform('unlock', [lock.getKey(), lock.getNonce()], EACH_TRY_TIMEOUT, function (err) {
         released = !err
         next()
       })

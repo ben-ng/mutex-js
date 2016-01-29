@@ -98,27 +98,35 @@ This is known as the "lost update" problem. You can solve this problem with Mute
 ```js
 
 var mutex = require('mutex').Redis
-  , g = new mutex()
+  , m = new mutex()
   , db = require('your-hypothetical-database')
 
-g.lock('myLock', {    // You can create multiple locks by naming them
+m.lock('myLock', {    // You can create multiple locks by naming them
   duration: 1000      // Hold the lock for no longer than 1 second
 , maxWait: 5000       // Wait for no longer than 5s to acquire the lock
-}, (err, lock) => {
+}, function (err, lock) {
   // Handle any errors. No need to release the lock as it will
   // automatically expire if the db.get or db.set commands failed.
 
-  // Begin critical section
-  db.get('x', (err, val) => {
+  // You should check if the lock is valid for the needed duration
+  // just before entering the critical section to protect against
+  // lock drift, garbage collection cycles, network delays...
+  if (lock.isValidForDuration(1000)) {
+    // Begin critical section
+    db.get('x', (err, val) => {
 
-    // Err handling omitted for brevity
-    db.set('x', val + 1, function (err) {
+      // Err handling omitted for brevity
+      db.set('x', val + 1, function (err) {
 
-      g.unlock('myLock', function (err) {
-        // End critical section
+        m.unlock('myLock', function (err) {
+          // End critical section
+        })
       })
     })
-  })
+  }
+  else {
+    // Error because the lock was not valid for the needed duration
+  }
 })
 
 ```
@@ -128,23 +136,31 @@ g.lock('myLock', {    // You can create multiple locks by naming them
 ```js
 
 var mutex = require('mutex').Redis
-  , g = new mutex()
+  , m = new mutex()
   , db = require('your-hypothetical-database')
 
-g.lock('myLock', {    // You can create multiple locks by naming them
-  duration: 1000      // Hold the lock for no longer than 1 second
+m.lock('myLock', {    // You can create multiple locks by naming them
+  duration: 1000      // Request a lock valid for at least 1 second
 , maxWait: 5000       // Wait for no longer than 5s to acquire the lock
 })
 .then(lock => {
-  // Begin critical section
-  return db.get('x')
-  .then(value => {
-    return db.set('x', value + 1)
-  })
-  // End critical section
-  .then(() => {
-    return g.unlock(lock)
-  })
+  // You should check if the lock is valid for the needed duration
+  // just before entering the critical section to protect against
+  // lock drift, garbage collection cycles, network delays...
+  if (lock.isValidForDuration(1000)) {
+    // Begin critical section
+    return db.get('x')
+    .then(value => {
+      return db.set('x', value + 1)
+    })
+    // End critical section
+    .then(() => {
+      return m.unlock(lock)
+    })
+  }
+  else {
+    return Promise.reject(new Error('The lock was not valid for the needed duration'))
+  }
 })
 .catch(err => {
   // Handle any errors. No need to release the lock as it will
@@ -157,42 +173,53 @@ By enclosing the `GET` and `SET` commands within the critical section, we guaran
 
 ### Methods
 
-#### Lock(key, duration, maxWait)
+All `Mutex` methods support callbacks or promises. Omit the `callback` parameter and the method will return a promise.
 
-##### Leader.lock
+#### Mutex.lock(String key, [Object options], [Function callback])
 
-1. If at least one entry from the current term has **not** been committed, append a `NOOP` entry to the log, send a heartbeat, and reject the request
-2. If no entry for the `key` exists in `lockMap`, or the `ttl` of an existing entry is in the past, add a `LOCK` entry to the log, and send a heartbeat
-3. If the `LOCK` entry from step 2 is committed before `maxWait` seconds, send a heartbeat, and resolve the request
-4. Reject the request if `maxWait` seconds elapse before resolving
+```js
+m.lock('foobar', {
+  duration: 1000     // how long must the lock be valid for?
+, maxWait: 5000      // how long to wait for another process before giving up?
+}, function (err, lock) {
+  // `lock` is an opaque object with several methods documented below
+  // it is what you should hand as the first argument to `Mutex.unlock`
+})
+```
 
-##### Follower.lock
+#### Mutex.unlock(Lock)
 
-1. Send `REQUEST_LOCK` with a unique `nonce` to the leader
-2. Resolve the request when a `LOCK` log entry is committed with the same `nonce`
-3. Reject the request if `maxWait` seconds elapse before resolving
+```js
+// `lock` is the opaque object returned from `Mutex.lock`
+m.unlock(lock, function (err) {})
+```
 
-##### Candidate.lock
+#### Lock.isValidForDuration()
 
-1. Wait until a leader is elected, then apply the rules for Leader or Followers
+```js
+if (lock.isValidForDuration(5000)) {
+  // critical section
+}
+else {
+  // toss out the lock, request a new one
+}
+```
 
-#### Unlock(key, nonce, maxWait)
+#### Lock.getKey()
 
-##### Leader.unlock
+```js
+lock.getKey()
+```
 
-1. If no entry for the `key` exists in `lockMap`, or the entry's `nonce` does not match the `nonce` argument, reject the request
-2. Otherwise, push an `UNLOCK` entry onto the log
-3. When the entry from step 2 is committed, delete the `lockMap` entry for `key`, and resolve the request
+Returns the key that the lock is for.
 
-##### Follower.unlock
+#### Lock.getTTL()
 
-1. Send `REQUEST_UNLOCK` with a previously used `nonce` to the leader
-2. Resolve the request when an `UNLOCK` log entry is committed with the same `nonce`
-3. Reject the request if `maxWait` seconds elapse before resolving
+```js
+lock.getTTL()
+```
 
-##### Candidate.unlock
-
-1. Wait until a leader is elected, then apply the rules for Leader or Followers
+Returns the UNIX timestamp that the lock will expire at.
 
 ### Correctness
 
@@ -202,7 +229,7 @@ Mutex has a comprehensive test suite, and releases always have 100% statement co
 
 #### Fuzzer
 
-Mutex has a fuzzer that has detected problems in the past. You can run it with `npm run fuzz`. It will keep running until a consistency issue is detected.
+Mutex has a fuzzer that has detected very subtle problems in the past (such as those caused by clock drift / garbage collection pauses). You can run it with `npm run fuzz`. It will keep running until a consistency issue is detected.
 
 #### Formal Proof
 

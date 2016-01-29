@@ -242,7 +242,7 @@ tap.test('raft strategy - releasing a lock with a different nonce is okay', func
 
   t.plan(2)
 
-  a.unlock({key: 'rubbish', nonce: 'rubbish'})
+  a.unlock(Strategy.prototype._createLock('rubbish', uuid.v4(), Date.now()))
   .then(function () {
     t.pass('should silently pass')
 

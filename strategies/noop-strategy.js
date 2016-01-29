@@ -14,10 +14,7 @@ function NoopStrategy () {
 util.inherits(NoopStrategy, StrategyInterface)
 
 NoopStrategy.prototype._lock = function _lock (key) {
-  return Promise.resolve({
-    key: key
-  , nonce: uuid.v4()
-  })
+  return Promise.resolve(this._createLock(key, uuid.v4(), Date.now() + 10000))
 }
 
 NoopStrategy.prototype._unlock = function _unlock () {
