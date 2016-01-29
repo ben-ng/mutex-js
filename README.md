@@ -40,20 +40,20 @@ npm install mutex
 Each test performs an asynchronous operation that takes approximately 70ms a hundred times. The "sequential" test is a single process performing all one hundred operations itself, in series. The "Worst Case" tests are ten processes trying to acquire the same lock before performing the task. The "Best Case" tests are ten processes acquiring different locks before performing the task.
 
 ```
-Sequential - Baseline x 0.15 ops/sec ±0.48% (5 runs sampled)
-Redis - Worst Case x 0.14 ops/sec ±1.90% (5 runs sampled)
-Raft - Worst Case x 0.05 ops/sec ±31.01% (5 runs sampled)
-Redis - Best Case x 0.65 ops/sec ±1.47% (6 runs sampled)
-Raft - Best Case x 0.10 ops/sec ±68.01% (5 runs sampled)
+Sequential - Baseline x 0.15 ops/sec ±0.35% (5 runs sampled)
+Redis - Worst Case x 0.13 ops/sec ±2.55% (5 runs sampled)
+Raft - Worst Case x 0.08 ops/sec ±6.34% (5 runs sampled)
+Redis - Best Case x 0.63 ops/sec ±1.08% (6 runs sampled)
+Raft - Best Case x 0.35 ops/sec ±1.47% (6 runs sampled)
 
-      Raft - Worst Case | ######################################## | 191.01 ms/op
-       Raft - Best Case | #####################                    | 102.06 ms/op
-     Redis - Worst Case | ###############                          | 73.8 ms/op
-  Sequential - Baseline | ##############                           | 67.3 ms/op
-      Redis - Best Case | ###                                      | 15.27 ms/op
+      Raft - Worst Case | ######################################## | 120.77 ms/op
+     Redis - Worst Case | ##########################               | 78.03 ms/op
+  Sequential - Baseline | ######################                   | 67.88 ms/op
+       Raft - Best Case | ##########                               | 28.72 ms/op
+      Redis - Best Case | #####                                    | 15.8 ms/op
 ```
 
-Note that ms/operation can be much lower than the ~70ms each task takes because multiple processes are working on tasks at the same time.
+Note that ms/operation can be much lower than the ~70ms each task takes when tasks are being performed in parallel.
 
 You can run the benchmark suite with `npm run benchmark`, or run it ten times with `npm run benchmarks` (the results aren't very stable due to the randomness in Raft leader election).
 
@@ -66,11 +66,11 @@ Distributed strategies require the use of a [Channel](#channels)
 Strategy  | Distributed? | Failure Tolerance                                                                                       | Notes
 --------- | ------------ | ------------------------------------------------------------------------------------------------------- | ----------------
 Redis     | No           | Redis can't fail, but any number of processes can fail as locks automatically expire                    | Uses `SET EX NX`
-Conflux   | Yes          | Less than half of all processes can fail, or be out of contact because of network partitions.           | Based on [Raft](http://raft.github.io)
+Raft      | Yes          | Less than half of all processes can fail, or be out of contact because of network partitions.           | Based on [Raft](http://raft.github.io)
 
 ### Channels
 
-Mutex is built on [Conflux](https://github.com/ben-ng/conflux), which is in turn built on [Gaggle](https://github.com/ben-ng/gaggle). This means that you can use [any channel that Gaggle supports](https://github.com/ben-ng/gaggle#channels).
+The distributed mutex is built on [Conflux](https://github.com/ben-ng/conflux), which is in turn built on [Gaggle](https://github.com/ben-ng/gaggle), an implementation of the [Raft](http://raft.github.io) consensus algorithm. This means that you can use [any channel that Gaggle supports](https://github.com/ben-ng/gaggle#channels).
 
 ## Examples
 
