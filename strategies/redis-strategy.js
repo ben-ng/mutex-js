@@ -11,7 +11,7 @@ var StrategyInterface = require('./strategy-interface')
 Promise.promisifyAll(redis.RedisClient.prototype)
 
 /**
-* A naive solution to mutual exclusion, mostly so that the test suite can be
+* A simple solution to mutual exclusion, mostly so that the test suite can be
 * tested, but good in situations where simplicity is more important than
 * high performance. For example, you might want to use this to run migrations
 * on deploy of an 12-factor app with multiple processes.
@@ -20,7 +20,7 @@ Promise.promisifyAll(redis.RedisClient.prototype)
 function RedisStrategy (opts) {
   var validatedOptions = Joi.validate(opts || {}, Joi.object().keys({
         strategyOptions: Joi.object().keys({
-          redisConnectionString: Joi.string()
+          connectionString: Joi.string()
         })
       , id: Joi.string()
       }), {
@@ -35,7 +35,7 @@ function RedisStrategy (opts) {
     throw new Error(prettifyJoiError(validatedOptions.error))
   }
 
-  connString = _.get(validatedOptions, 'value.strategyOptions.redisConnectionString')
+  connString = _.get(validatedOptions, 'value.strategyOptions.connectionString')
   redisClient = connString != null ? redis.createClient(connString) : redis.createClient()
 
   redisClient.on('error', this._logFunction)

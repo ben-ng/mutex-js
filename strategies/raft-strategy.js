@@ -15,11 +15,11 @@ function RaftStrategy (opts) {
   var self = this
     , validatedOptions = Joi.validate(opts || {}, Joi.object().keys({
         strategyOptions: Joi.object().keys({
-          'unlockTimeout': Joi.number().integer().min(0).default(5000)
-        , 'clusterSize': Joi.number().integer().min(0)
+          unlockTimeout: Joi.number().integer().min(0).default(5000)
+        , clusterSize: Joi.number().integer().min(0)
+        , channel: Joi.object()
         })
       , id: Joi.string()
-      , channel: Joi.object()
       }), {
         convert: false
       })
@@ -38,7 +38,7 @@ function RaftStrategy (opts) {
   this._conflux = conflux({
     id: opts.id
   , clusterSize: opts.strategyOptions.clusterSize
-  , channel: opts.channel
+  , channel: opts.strategyOptions.channel
   , methods: {
       lock: function (key, nonce, duration) {
         var state = this.getProvisionalState()

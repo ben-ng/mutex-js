@@ -10,67 +10,125 @@ npm install mutex
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Contents**
 
-- [Performance](#performance)
-- [Usage](#usage)
+- [Constructing Instances](#constructing-instances)
   - [Strategies](#strategies)
   - [Channels](#channels)
+- [Methods](#methods)
+    - [Mutex.lock(String key, [Object options], [Function callback]) => Lock](#mutexlockstring-key-object-options-function-callback--lock)
+  - [Mutex.unlock(Lock lock)](#mutexunlocklock-lock)
+  - [Lock.isValidForDuration() => Boolean](#lockisvalidforduration--boolean)
+  - [Lock.getKey() => String](#lockgetkey--string)
+  - [Lock.getTTL() => Number](#lockgetttl--number)
 - [Examples](#examples)
   - [Atomic Increments](#atomic-increments)
     - [Sample Code: Performing Atomic Increments (Callbacks)](#sample-code-performing-atomic-increments-callbacks)
     - [Sample Code: Performing Atomic Increments (Promises)](#sample-code-performing-atomic-increments-promises)
-  - [Methods](#methods)
-    - [Lock(key, duration, maxWait)](#lockkey-duration-maxwait)
-      - [Leader.lock](#leaderlock)
-      - [Follower.lock](#followerlock)
-      - [Candidate.lock](#candidatelock)
-    - [Unlock(key, nonce, maxWait)](#unlockkey-nonce-maxwait)
-      - [Leader.unlock](#leaderunlock)
-      - [Follower.unlock](#followerunlock)
-      - [Candidate.unlock](#candidateunlock)
-  - [Correctness](#correctness)
-    - [Test Suite](#test-suite)
-    - [Fuzzer](#fuzzer)
-    - [Formal Proof](#formal-proof)
+- [Performance](#performance)
+- [Correctness](#correctness)
+  - [Test Suite](#test-suite)
+  - [Fuzzer](#fuzzer)
+  - [Formal Proof](#formal-proof)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## Performance
+## Constructing Instances
 
-Each test performs an asynchronous operation that takes approximately 70ms a hundred times. The "sequential" test is a single process performing all one hundred operations itself, in series. The "Worst Case" tests are ten processes trying to acquire the same lock before performing the task. The "Best Case" tests are ten processes acquiring different locks before performing the task.
+To use `mutex` you need to pick a [Strategy](#strategies). Distributed strategies require the use of a [Channel](#channels). The easiest way to get started is to use the `redis` strategy.
 
+```js
+var mutex = require('mutex')
+var uuid = require('uuid')
+
+// Creating a non-distributed mutex with a redis server
+var a = mutex({
+  id: uuid.v4()
+, strategy: {
+    name: 'redis'
+
+    // optional, defaults to localhost
+  , connectionString: 'redis://127.0.0.1'
+  })
+})
+
+// Creating a distributed mutex with 5 nodes, using redis for communication
+var b = mutex({
+  id: uuid.v4()
+, strategy: {
+    name: 'raft'
+
+    // required: how many mutex instances you are creating
+  , clusterSize: 5
+
+    // required: pick any channel that gaggle supports
+  , channel: {
+      name: 'redis'
+
+      // the following options are specific to the channel you picked
+    , channelName: 'mypubsubchannel'
+    }
+  }
+})
 ```
-Sequential - Baseline x 0.15 ops/sec ±0.35% (5 runs sampled)
-Redis - Worst Case x 0.13 ops/sec ±2.55% (5 runs sampled)
-Raft - Worst Case x 0.08 ops/sec ±6.34% (5 runs sampled)
-Redis - Best Case x 0.63 ops/sec ±1.08% (6 runs sampled)
-Raft - Best Case x 0.35 ops/sec ±1.47% (6 runs sampled)
-
-      Raft - Worst Case | ######################################## | 120.77 ms/op
-     Redis - Worst Case | ##########################               | 78.03 ms/op
-  Sequential - Baseline | ######################                   | 67.88 ms/op
-       Raft - Best Case | ##########                               | 28.72 ms/op
-      Redis - Best Case | #####                                    | 15.8 ms/op
-```
-
-Note that ms/operation can be much lower than the ~70ms each task takes when tasks are being performed in parallel.
-
-You can run the benchmark suite with `npm run benchmark`, or run it ten times with `npm run benchmarks` (the results aren't very stable due to the randomness in Raft leader election).
-
-## Usage
 
 ### Strategies
 
-Distributed strategies require the use of a [Channel](#channels)
-
 Strategy  | Distributed? | Failure Tolerance                                                                                       | Notes
 --------- | ------------ | ------------------------------------------------------------------------------------------------------- | ----------------
-Redis     | No           | Redis can't fail, but any number of processes can fail as locks automatically expire                    | Uses `SET EX NX`
-Raft      | Yes          | Less than half of all processes can fail, or be out of contact because of network partitions.           | Based on [Raft](http://raft.github.io)
+`redis`     | No           | Redis can't fail, but any number of processes can fail as locks automatically expire                    | Uses `SET EX NX`
+`raft`      | Yes          | Less than half of all processes can fail, or be out of contact because of network partitions.           | Based on [Raft](http://raft.github.io)
 
 ### Channels
 
 The distributed mutex is built on [Conflux](https://github.com/ben-ng/conflux), which is in turn built on [Gaggle](https://github.com/ben-ng/gaggle), an implementation of the [Raft](http://raft.github.io) consensus algorithm. This means that you can use [any channel that Gaggle supports](https://github.com/ben-ng/gaggle#channels).
+
+## Methods
+
+Once you've constructed an instance of `Mutex`, you can use it to acquire and release locks. All `Mutex` methods support callbacks or promises. Omit the `callback` parameter and the method will return a promise.
+
+#### Mutex.lock(String key, [Object options], [Function callback]) => Lock
+
+```js
+m.lock('foobar', {
+  duration: 1000     // how long must the lock be valid for?
+, maxWait: 5000      // how long to wait for another process before giving up?
+}, function (err, lock) {
+  // `lock` is an opaque object with several methods documented below
+  // it is what you should hand as the first argument to `Mutex.unlock`
+})
+```
+
+### Mutex.unlock(Lock lock)
+
+```js
+// `lock` is the opaque object returned from `Mutex.lock`
+m.unlock(lock, function (err) {})
+```
+
+### Lock.isValidForDuration() => Boolean
+
+```js
+if (lock.isValidForDuration(5000)) {
+  // critical section
+}
+else {
+  // toss out the lock, request a new one
+}
+```
+
+### Lock.getKey() => String
+
+```js
+lock.getKey()
+```
+
+Returns the key that the lock is for.
+
+### Lock.getTTL() => Number
+
+```js
+lock.getTTL()
+```
 
 ## Examples
 
@@ -97,8 +155,14 @@ This is known as the "lost update" problem. You can solve this problem with Mute
 
 ```js
 
-var mutex = require('mutex').Redis
-  , m = new mutex()
+var mutex = require('mutex')
+  , uuid = require('uuid')
+  , m = mutex({
+      id: uuid.v4()
+    , strategy: {
+        name: 'redis'
+      }
+    })
   , db = require('your-hypothetical-database')
 
 m.lock('myLock', {    // You can create multiple locks by naming them
@@ -135,8 +199,13 @@ m.lock('myLock', {    // You can create multiple locks by naming them
 
 ```js
 
-var mutex = require('mutex').Redis
-  , m = new mutex()
+var mutex = require('mutex')
+  , m = mutex({
+      id: uuid.v4()
+    , strategy: {
+        name: 'redis'
+      }
+    })
   , db = require('your-hypothetical-database')
 
 m.lock('myLock', {    // You can create multiple locks by naming them
@@ -171,67 +240,41 @@ m.lock('myLock', {    // You can create multiple locks by naming them
 
 By enclosing the `GET` and `SET` commands within the critical section, we guarantee that updates are not lost.
 
-### Methods
-
-All `Mutex` methods support callbacks or promises. Omit the `callback` parameter and the method will return a promise.
-
-#### Mutex.lock(String key, [Object options], [Function callback])
-
-```js
-m.lock('foobar', {
-  duration: 1000     // how long must the lock be valid for?
-, maxWait: 5000      // how long to wait for another process before giving up?
-}, function (err, lock) {
-  // `lock` is an opaque object with several methods documented below
-  // it is what you should hand as the first argument to `Mutex.unlock`
-})
-```
-
-#### Mutex.unlock(Lock)
-
-```js
-// `lock` is the opaque object returned from `Mutex.lock`
-m.unlock(lock, function (err) {})
-```
-
-#### Lock.isValidForDuration()
-
-```js
-if (lock.isValidForDuration(5000)) {
-  // critical section
-}
-else {
-  // toss out the lock, request a new one
-}
-```
-
-#### Lock.getKey()
-
-```js
-lock.getKey()
-```
-
-Returns the key that the lock is for.
-
-#### Lock.getTTL()
-
-```js
-lock.getTTL()
-```
-
 Returns the UNIX timestamp that the lock will expire at.
 
-### Correctness
+## Performance
 
-#### Test Suite
+Each test performs an asynchronous operation that takes approximately 70ms a hundred times. The "sequential" test is a single process performing all one hundred operations itself, in series. The "Worst Case" tests are ten processes trying to acquire the same lock before performing the task. The "Best Case" tests are ten processes acquiring different locks before performing the task.
+
+```
+Sequential - Baseline x 0.15 ops/sec ±0.35% (5 runs sampled)
+Redis - Worst Case x 0.13 ops/sec ±2.55% (5 runs sampled)
+Raft - Worst Case x 0.08 ops/sec ±6.34% (5 runs sampled)
+Redis - Best Case x 0.63 ops/sec ±1.08% (6 runs sampled)
+Raft - Best Case x 0.35 ops/sec ±1.47% (6 runs sampled)
+
+      Raft - Worst Case | ######################################## | 120.77 ms/op
+     Redis - Worst Case | ##########################               | 78.03 ms/op
+  Sequential - Baseline | ######################                   | 67.88 ms/op
+       Raft - Best Case | ##########                               | 28.72 ms/op
+      Redis - Best Case | #####                                    | 15.8 ms/op
+```
+
+Note that ms/operation can be much lower than the ~70ms each task takes when tasks are being performed in parallel.
+
+You can run the benchmark suite with `npm run benchmark`, or run it ten times with `npm run benchmarks` (the results aren't very stable due to the randomness in Raft leader election).
+
+## Correctness
+
+### Test Suite
 
 Mutex has a comprehensive test suite, and releases always have 100% statement, branch, and function coverage.
 
-#### Fuzzer
+### Fuzzer
 
 Mutex has a fuzzer that has detected very subtle problems in the past (such as those caused by clock drift / garbage collection pauses). You can run it with `npm run fuzz`. It will keep running until a consistency issue is detected. The most subtle issues detected so far required up to fifteen hours of fuzzing.
 
-#### Formal Proof
+### Formal Proof
 
 TODO
 

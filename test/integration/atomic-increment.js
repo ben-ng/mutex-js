@@ -8,6 +8,7 @@
 var tap = require('tap')
   , uuid = require('uuid')
   , _ = require('lodash')
+  , mutex = require('../../')
   , atomicIncrement = require('../../lib/atomic-increment')
   , CLUSTER_SIZE = 10
 
@@ -29,14 +30,7 @@ tap.test('atomic increment test fails when mutual exclusion is faulty', function
 })
 
 tap.test('atomic increment - Redis', function (t) {
-  var Strategy = require('../../strategies/redis-strategy')
-    , counter = 0
-    , explicitOptions = {
-        strategyOptions: {
-          redisConnectionString: 'redis://127.0.0.1'
-        }
-      , id: uuid.v4()
-      }
+  var counter = 0
     , testStart = Date.now()
     , INCREMENTS_PER_PROCESS = 50
 
@@ -46,7 +40,12 @@ tap.test('atomic increment - Redis', function (t) {
     counter = counter + 1
 
     // Gives us coverage for both default and explicit init
-    return new Strategy(counter % 2 === 0 ? explicitOptions : {id: uuid.v4()})
+    return mutex({
+      id: uuid.v4()
+    , strategy: {
+        name: 'redis'
+      }
+    })
   }
   , CLUSTER_SIZE, INCREMENTS_PER_PROCESS, function (err) {
     t.ifError(err, 'There should be no error')
@@ -56,23 +55,22 @@ tap.test('atomic increment - Redis', function (t) {
 })
 
 tap.test('atomic increment - Raft', function (t) {
-  var Strategy = require('../../strategies/raft-strategy')
-    , testStart = Date.now()
+  var testStart = Date.now()
     , INCREMENTS_PER_PROCESS = 20
 
   t.plan(2)
 
   atomicIncrement(function () {
-    var id = uuid.v4()
-      , strat = new Strategy({
-          id: id
-        , channel: {name: 'memory'}
-        , strategyOptions: {
-            clusterSize: CLUSTER_SIZE
-          }
-        })
-
-    return strat
+    return mutex({
+      id: uuid.v4()
+    , strategy: {
+        name: 'raft'
+      , clusterSize: CLUSTER_SIZE
+      , channel: {
+          name: 'memory'
+        }
+      }
+    })
   }
   , CLUSTER_SIZE, INCREMENTS_PER_PROCESS, function (err) {
     t.ifError(err, 'There should be no error ' + err)

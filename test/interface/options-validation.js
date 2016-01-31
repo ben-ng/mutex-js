@@ -23,13 +23,13 @@ tap.test('Throws when redis constructor options are invalid', function (t) {
       /*eslint-disable no-unused-vars*/
       var s = new RedisStrategy({
         strategyOptions: {
-          redisConnectionString: false
+          connectionString: false
         }
       , id: uuid.v4()
       })
       /*eslint-enable no-unused-vars*/
     }
-  , /Invalid options: "redisConnectionString" must be a string/
+  , /Invalid options: "connectionString" must be a string/
   , 'Should throw if logFunction is not a function')
 
   t.end()

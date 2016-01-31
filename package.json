@@ -2,6 +2,7 @@
   "name": "mutex",
   "version": "1.0.1",
   "description": "Mutual exclusion made easy",
+  "main": "lib/factory",
   "directories": {
     "test": "test"
   },

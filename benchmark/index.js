@@ -49,7 +49,7 @@ suite
       // Gives us coverage for both default and explicit init
       return new Strategy({
         strategyOptions: {
-          redisConnectionString: 'redis://127.0.0.1'
+          connectionString: 'redis://127.0.0.1'
         }
       , id: uuid.v4()
       })
@@ -98,7 +98,7 @@ suite
       // Gives us coverage for both default and explicit init
       return new Strategy({
         strategyOptions: {
-          redisConnectionString: 'redis://127.0.0.1'
+          connectionString: 'redis://127.0.0.1'
         }
       , id: uuid.v4()
       })

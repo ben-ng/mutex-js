@@ -39,10 +39,10 @@ tap.test('raft strategy - acquiring a lock times out', function (t) {
         id: a_id
       , strategyOptions: {
           clusterSize: 2
-        }
-      , channel: {
-          name: 'redis'
-        , channelName: 'acqtimeoutpubsub'
+        , channel: {
+            name: 'redis'
+          , channelName: 'acqtimeoutpubsub'
+          }
         }
       })
     , b_id = uuid.v4()
@@ -50,10 +50,10 @@ tap.test('raft strategy - acquiring a lock times out', function (t) {
         id: b_id
       , strategyOptions: {
           clusterSize: 2
-        }
-      , channel: {
-          name: 'redis'
-        , channelName: 'acqtimeoutpubsub'
+        , channel: {
+            name: 'redis'
+          , channelName: 'acqtimeoutpubsub'
+          }
         }
       })
     , sameKey = 'timeOutLock'
@@ -92,10 +92,10 @@ tap.test('raft strategy - acquiring a lock held by another process fails', funct
         id: a_id
       , strategyOptions: {
           clusterSize: 2
-        }
-      , channel: {
-          name: 'redis'
-        , channelName: 'acqfailpubsub'
+        , channel: {
+            name: 'redis'
+          , channelName: 'acqfailpubsub'
+          }
         }
       })
     , b_id = uuid.v4()
@@ -103,10 +103,10 @@ tap.test('raft strategy - acquiring a lock held by another process fails', funct
         id: b_id
       , strategyOptions: {
           clusterSize: 2
-        }
-      , channel: {
-          name: 'redis'
-        , channelName: 'acqfailpubsub'
+        , channel: {
+            name: 'redis'
+          , channelName: 'acqfailpubsub'
+          }
         }
       })
     , sameKey = 'blockedLock'
@@ -161,10 +161,10 @@ tap.test('raft strategy - releasing a lock times out', function (t) {
       , strategyOptions: {
           clusterSize: 2
         , unlockTimeout: 0
-        }
-      , channel: {
-          name: 'redis'
-        , channelName: 'releasetimeoutpubsub'
+        , channel: {
+            name: 'redis'
+          , channelName: 'releasetimeoutpubsub'
+          }
         }
       })
     , b_id = uuid.v4()
@@ -173,10 +173,10 @@ tap.test('raft strategy - releasing a lock times out', function (t) {
       , strategyOptions: {
           clusterSize: 2
         , unlockTimeout: 0
-        }
-      , channel: {
-          name: 'redis'
-        , channelName: 'releasetimeoutpubsub'
+        , channel: {
+            name: 'redis'
+          , channelName: 'releasetimeoutpubsub'
+          }
         }
       })
     , sameKey = 'timeOutLock'
@@ -221,10 +221,10 @@ tap.test('raft strategy - releasing a lock with a different nonce is okay', func
       , strategyOptions: {
           clusterSize: 2
         , unlockTimeout: 1000
-        }
-      , channel: {
-          name: 'redis'
-        , channelName: 'releasetimeoutpubsub'
+        , channel: {
+            name: 'redis'
+          , channelName: 'releasetimeoutpubsub'
+          }
         }
       })
     , b_id = uuid.v4()
@@ -233,10 +233,10 @@ tap.test('raft strategy - releasing a lock with a different nonce is okay', func
       , strategyOptions: {
           clusterSize: 2
         , unlockTimeout: 1000
-        }
-      , channel: {
-          name: 'redis'
-        , channelName: 'releasetimeoutpubsub'
+        , channel: {
+            name: 'redis'
+          , channelName: 'releasetimeoutpubsub'
+          }
         }
       })
 
