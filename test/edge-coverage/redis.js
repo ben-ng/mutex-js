@@ -18,8 +18,18 @@ tap.test('redis strategy - fails when no options are given', function (t) {
 })
 
 tap.test('redis strategy - acquisition times out', function (t) {
-  var a = new Strategy({id: uuid.v4()})
-    , b = new Strategy({id: uuid.v4()})
+  var a = new Strategy({
+        id: uuid.v4()
+      , strategyOptions: {
+          connectionString: 'redis://127.0.0.1'
+        }
+      })
+    , b = new Strategy({
+        id: uuid.v4()
+      , strategyOptions: {
+          connectionString: 'redis://127.0.0.1'
+        }
+      })
     , sameKey = 'timeOutLock'
     , sawExpectedErr = false
 
