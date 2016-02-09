@@ -2,6 +2,8 @@
 
 This is a keyed mutex. It abstracts over different [Strategies](#strategies) for mutual exclusion, so you can choose your own tradeoffs.
 
+**IMPORTANT:** Please read the section on [correctness](#correctness) before using this module.
+
 ```sh
 npm install mutex
 ```
@@ -27,7 +29,6 @@ npm install mutex
 - [Correctness](#correctness)
   - [Test Suite](#test-suite)
   - [Fuzzer](#fuzzer)
-  - [Formal Proof](#formal-proof)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -266,17 +267,17 @@ You can run the benchmark suite with `npm run benchmark`, or run it ten times wi
 
 ## Correctness
 
+**This mutex should not be used if correctness is important to you.** While this module is very good at compensating for garbage collection pauses and clock drift, you cannot be 100% certain that the lock you have acquired has expired because processes get paused for bizzare reasons out of your control. Please read Martin Kleppmann's [blog post about distributed locking](http://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) to better understand this.
+
+If you can deal with a mutex that is very rarely wrong (<0.000001% of the time), then go ahead and use this.
+
 ### Test Suite
 
 Mutex has a comprehensive test suite, and releases always have 100% statement, branch, and function coverage.
 
 ### Fuzzer
 
-Mutex has a fuzzer that has detected very subtle problems in the past (such as those caused by clock drift / garbage collection pauses). You can run it with `npm run fuzz`. It will keep running until a consistency issue is detected. The most subtle issues detected so far required up to fifteen hours of fuzzing.
-
-### Formal Proof
-
-TODO
+Mutex has a fuzzer can detect very subtle problems (such as those caused by clock drift / garbage collection pauses). You can run it with `npm run fuzz`. It will keep running until a consistency issue is detected. The most subtle issues detected so far required up to fifteen hours of fuzzing.
 
 ## License
 
