@@ -17,6 +17,20 @@ tap.test('redis strategy - fails when no options are given', function (t) {
   t.end()
 })
 
+tap.test('redis strategy - fails when server does not exist', function (t) {
+  t.plan(1);
+  var c = new Strategy({
+    id: uuid.v4()
+  , strategyOptions: {
+      connectionString: 'redis://this-be-broken'
+    }
+  , logFunction: function (err) {
+      t.pass('Failed with ' + err);
+      c.close();
+    }
+  })
+})
+
 tap.test('redis strategy - acquisition times out', function (t) {
   var a = new Strategy({
         id: uuid.v4()
