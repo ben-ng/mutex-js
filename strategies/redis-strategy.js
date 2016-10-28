@@ -19,7 +19,8 @@ Promise.promisifyAll(redis.RedisClient.prototype)
 
 function RedisStrategy (opts) {
   var validatedOptions = Joi.validate(opts || {}, Joi.object().keys({
-        strategyOptions: Joi.object().keys({
+        logFunction: Joi.func().default(_.noop)
+      , strategyOptions: Joi.object().keys({
           connectionString: Joi.string()
         })
       , id: Joi.string()
