@@ -275,6 +275,16 @@ If you can deal with a mutex that is very rarely wrong (<0.000001% of the time),
 
 Mutex has a comprehensive test suite, and releases always have 100% statement, branch, and function coverage.
 
+```sh
+# You need to install Redis to run the tests!
+brew install redis
+# To have launchd start redis now and restart at login:
+# brew services start redis
+# Or, if you don't want/need a background service you can just run:
+# redis-server /usr/local/etc/redis.confV
+npm test
+```
+
 ### Fuzzer
 
 Mutex has a fuzzer can detect very subtle problems (such as those caused by clock drift / garbage collection pauses). You can run it with `npm run fuzz`. It will keep running until a consistency issue is detected. The most subtle issues detected so far required up to fifteen hours of fuzzing.
