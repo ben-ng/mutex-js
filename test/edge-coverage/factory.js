@@ -5,7 +5,7 @@
 var mutex = require('../../')
   , tap = require('tap')
 
-tap.test('facory - throws when missing required options', function (t) {
+tap.test('factory - throws when missing required options', function (t) {
   t.throws(function () {
     mutex({
       id: 'foobar'
@@ -16,7 +16,7 @@ tap.test('facory - throws when missing required options', function (t) {
   t.end()
 })
 
-tap.test('facory - throws when missing all options', function (t) {
+tap.test('factory - throws when missing all options', function (t) {
   t.throws(function () {
     mutex()
   }, /Invalid options/, 'Should throw if missing options')
