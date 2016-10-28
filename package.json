@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "tap test/**/*.js -t=180 --reporter=spec --statements=100 --coverage-report=text-summary",
-    "coverage": "tap test/**/*.js -t=180 --reporter=spec --coverage --coverage-report=html && open -a \"Safari\" coverage/index.html",
+    "coverage": "tap test/**/*.js -t=180 --reporter=spec --statements=100 --coverage --coverage-report=html && open -a \"Safari\" coverage/index.html",
     "test-ci": "tap test/**/*.js -t=180 --reporter=spec --statements=100",
     "tdd": "nodemon -x npm test",
     "doctoc": "doctoc README.md",
